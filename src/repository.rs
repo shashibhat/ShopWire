@@ -23,12 +23,21 @@ pub async fn search_products(
     );
 
     if let Some(query) = request.query.as_ref() {
-        if !query.trim().is_empty() {
-            query_builder.push(" AND (name ILIKE ");
-            query_builder.push_bind(format!("%{}%", query.trim()));
-            query_builder.push(" OR brand ILIKE ");
-            query_builder.push_bind(format!("%{}%", query.trim()));
-            query_builder.push(")");
+        let terms = tokenize_query(query);
+        if !terms.is_empty() {
+            query_builder.push(" AND (");
+            let mut separated = query_builder.separated(" OR ");
+            for term in terms {
+                let like = format!("%{}%", term);
+                separated.push("(name ILIKE ");
+                separated.push_bind(like.clone());
+                separated.push(" OR brand ILIKE ");
+                separated.push_bind(like.clone());
+                separated.push(" OR color ILIKE ");
+                separated.push_bind(like);
+                separated.push(")");
+            }
+            separated.push_unseparated(")");
         }
     }
 
@@ -104,6 +113,20 @@ fn map_row_to_product_hit(row: PgRow) -> ProductHit {
         image_url: row.get("image_url"),
         redirect_url: row.get("walmart_url"),
     }
+}
+
+fn tokenize_query(query: &str) -> Vec<String> {
+    query
+        .split(|c: char| !c.is_alphanumeric())
+        .filter_map(|part| {
+            let t = part.trim().to_lowercase();
+            if t.is_empty() {
+                None
+            } else {
+                Some(t)
+            }
+        })
+        .collect()
 }
 
 pub async fn upsert_products(

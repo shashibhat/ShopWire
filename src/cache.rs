@@ -26,7 +26,7 @@ pub fn search_cache_key(request: &SearchRequest) -> String {
     let stock_min = filters.and_then(|f| f.stock_min).unwrap_or(0);
 
     format!(
-        "search:v1:q={}:brand={}:color={}:category={}:size={}:price_max={}:discount_min={}:stock_min={}:sort={}:limit={}:page={}",
+        "search:v2:q={}:brand={}:color={}:category={}:size={}:price_max={}:discount_min={}:stock_min={}:sort={}:limit={}:page={}",
         request.query.clone().unwrap_or_default().to_lowercase(),
         brand.to_lowercase(),
         color.to_lowercase(),
@@ -74,7 +74,7 @@ pub async fn set_cached_search(
 
 pub async fn invalidate_search_cache(client: &redis::Client) -> Result<usize, redis::RedisError> {
     let mut conn = client.get_multiplexed_async_connection().await?;
-    let keys: Vec<String> = conn.keys("search:v1:*").await?;
+    let keys: Vec<String> = conn.keys("search:v*:*").await?;
     if keys.is_empty() {
         return Ok(0);
     }

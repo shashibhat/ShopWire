@@ -206,14 +206,14 @@ fn fallback_products(request: &SearchRequest) -> Vec<ProductHit> {
         .unwrap_or(60.0);
     let discount_min = filters.and_then(|f| f.discount_min).unwrap_or(0);
     let stock_min = filters.and_then(|f| f.stock_min).unwrap_or(0);
-    let matches_query = request
+    let query_terms = request
         .query
         .as_deref()
-        .map(|q| q.to_lowercase().contains("nike"))
-        .unwrap_or(true);
+        .map(tokenize_query)
+        .unwrap_or_default();
 
     let mut items = Vec::new();
-    if matches_query && category.eq_ignore_ascii_case("shoes") {
+    if category.eq_ignore_ascii_case("shoes") {
         items.push(ProductHit {
             sku: "nike-pg40-royal".to_string(),
             name: "Nike Air Zoom Pegasus 40".to_string(),
@@ -244,6 +244,7 @@ fn fallback_products(request: &SearchRequest) -> Vec<ProductHit> {
 
     let mut filtered = items
         .into_iter()
+        .filter(|item| query_matches(item, &query_terms))
         .filter(|item| item.price <= max_price)
         .filter(|item| item.discount_pct >= discount_min)
         .filter(|item| item.stock >= stock_min)
@@ -256,4 +257,27 @@ fn fallback_products(request: &SearchRequest) -> Vec<ProductHit> {
     }
 
     filtered.into_iter().take(limit).collect()
+}
+
+fn tokenize_query(query: &str) -> Vec<String> {
+    query
+        .split(|c: char| !c.is_alphanumeric())
+        .filter_map(|part| {
+            let t = part.trim().to_lowercase();
+            if t.is_empty() {
+                None
+            } else {
+                Some(t)
+            }
+        })
+        .collect()
+}
+
+fn query_matches(item: &ProductHit, terms: &[String]) -> bool {
+    if terms.is_empty() {
+        return true;
+    }
+
+    let haystack = format!("{} {} {} shoes", item.name, item.brand, item.color).to_lowercase();
+    terms.iter().any(|term| haystack.contains(term))
 }

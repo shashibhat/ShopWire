@@ -37,7 +37,7 @@ The prototype is designed for Render deployment so teams can iterate quickly and
         |             \-- POST /internal/ingest/upsert
         |
         +--> [Redis (Render Key Value)]
-        |       - search cache (search:v1:*)
+        |       - search cache (search:v*:*)
         |       - cache invalidation after ingest
         |
         +--> [Postgres (Render)]
@@ -120,7 +120,7 @@ The prototype is designed for Render deployment so teams can iterate quickly and
   - Upsert incoming product snapshots into `products`.
   - Append rows to `price_history`.
   - Record run summary in `ingestion_runs`.
-  - Invalidate `search:v1:*` Redis keys for fast freshness.
+  - Invalidate `search:v*:*` Redis keys for fast freshness.
 
 Example:
 ```bash
