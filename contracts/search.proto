@@ -1,0 +1,54 @@
+syntax = "proto3";
+
+package blueshoemart.v1;
+
+message SearchRequest {
+  optional string query = 1;
+  optional Filters filters = 2;
+  optional string sort = 3;
+  optional uint32 limit = 4;
+  optional uint32 page = 5;
+}
+
+message Filters {
+  optional string category = 1;
+  repeated string brand = 2;
+  optional string color = 3;
+  optional PriceFilter price = 4;
+  optional uint32 discount_min = 5;
+  optional string size = 6;
+  optional uint32 stock_min = 7;
+}
+
+message PriceFilter {
+  optional double max = 1;
+}
+
+message ProductHit {
+  string sku = 1;
+  string name = 2;
+  string brand = 3;
+  string color = 4;
+  string size = 5;
+  double price = 6;
+  double original_price = 7;
+  uint32 discount_pct = 8;
+  uint32 stock = 9;
+  string image_url = 10;
+  string redirect_url = 11;
+}
+
+message SearchMeta {
+  uint32 total = 1;
+  uint32 page = 2;
+  uint32 latency_ms = 3;
+  string source = 4;
+  double accuracy = 5;
+}
+
+message SearchResponse {
+  repeated ProductHit results = 1;
+  SearchMeta meta = 2;
+  repeated string suggestions = 3;
+}
+

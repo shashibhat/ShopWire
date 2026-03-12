@@ -1,0 +1,200 @@
+openapi: 3.1.0
+info:
+  title: BlueShoeMart Agent API
+  version: 1.0.0
+  description: Agent-first shoe catalog with structured search responses.
+servers:
+  - url: https://api.blueshoemart.com
+paths:
+  /healthz:
+    get:
+      summary: Health check
+      responses:
+        "200":
+          description: Service is healthy
+  /agent/discovery:
+    get:
+      summary: Agent capability manifest
+      responses:
+        "200":
+          description: Discovery manifest
+  /v1/schema:
+    get:
+      summary: OpenAPI schema document
+      responses:
+        "200":
+          description: YAML schema
+  /v1/search:
+    post:
+      summary: Search products for agent clients
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SearchRequest"
+      responses:
+        "200":
+          description: Structured search results
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SearchResponse"
+  /internal/ingest/upsert:
+    post:
+      summary: Internal product upsert endpoint
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IngestUpsertRequest"
+      responses:
+        "200":
+          description: Ingestion summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IngestUpsertResponse"
+components:
+  schemas:
+    SearchRequest:
+      type: object
+      properties:
+        query:
+          type: string
+        sort:
+          type: string
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 100
+        page:
+          type: integer
+          minimum: 1
+        filters:
+          type: object
+          properties:
+            category:
+              type: string
+            brand:
+              type: array
+              items:
+                type: string
+            color:
+              type: string
+            discount_min:
+              type: integer
+            size:
+              type: string
+            stock_min:
+              type: integer
+            price:
+              type: object
+              properties:
+                max:
+                  type: number
+    ProductHit:
+      type: object
+      properties:
+        sku:
+          type: string
+        name:
+          type: string
+        brand:
+          type: string
+        color:
+          type: string
+        size:
+          type: string
+        price:
+          type: number
+        original_price:
+          type: number
+        discount_pct:
+          type: integer
+        stock:
+          type: integer
+        image_url:
+          type: string
+        redirect_url:
+          type: string
+    SearchMeta:
+      type: object
+      properties:
+        total:
+          type: integer
+        page:
+          type: integer
+        latency_ms:
+          type: integer
+        source:
+          type: string
+        accuracy:
+          type: number
+    SearchResponse:
+      type: object
+      properties:
+        results:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProductHit"
+        meta:
+          $ref: "#/components/schemas/SearchMeta"
+        suggestions:
+          type: array
+          items:
+            type: string
+    IngestProduct:
+      type: object
+      required: [sku, name, brand, price, walmart_url]
+      properties:
+        sku:
+          type: string
+        name:
+          type: string
+        brand:
+          type: string
+        category:
+          type: string
+        color:
+          type: string
+        size:
+          type: string
+        price:
+          type: number
+        original_price:
+          type: number
+        stock:
+          type: integer
+        image_url:
+          type: string
+        walmart_url:
+          type: string
+        active:
+          type: boolean
+    IngestUpsertRequest:
+      type: object
+      required: [products]
+      properties:
+        source:
+          type: string
+        invalidate_cache:
+          type: boolean
+        products:
+          type: array
+          items:
+            $ref: "#/components/schemas/IngestProduct"
+    IngestUpsertResponse:
+      type: object
+      properties:
+        source:
+          type: string
+        received:
+          type: integer
+        upserted:
+          type: integer
+        failed:
+          type: integer
+        invalidated_cache_keys:
+          type: integer
