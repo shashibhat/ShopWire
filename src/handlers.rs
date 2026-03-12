@@ -25,7 +25,7 @@ pub async fn healthz(state: web::Data<AppState>) -> impl Responder {
 
 pub async fn discovery() -> impl Responder {
     let response = DiscoveryResponse {
-        id: "blueshoemart-v1".to_string(),
+        id: "shopwire-v1".to_string(),
         name: "BlueShoeMart".to_string(),
         version: "1.0".to_string(),
         description: "Agent-first shoe catalog. Walmart-style inventory, instant responses, redirect to Walmart for checkout.".to_string(),

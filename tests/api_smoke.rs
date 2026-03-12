@@ -26,7 +26,7 @@ async fn discovery_returns_manifest() {
         .uri("/agent/discovery")
         .to_request();
     let body: serde_json::Value = test::call_and_read_body_json(&app, req).await;
-    assert_eq!(body["id"], "blueshoemart-v1");
+    assert_eq!(body["id"], "shopwire-v1");
     assert_eq!(body["name"], "BlueShoeMart");
 }
 
