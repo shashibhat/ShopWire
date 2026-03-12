@@ -28,6 +28,10 @@ async fn discovery_returns_manifest() {
     let body: serde_json::Value = test::call_and_read_body_json(&app, req).await;
     assert_eq!(body["id"], "shopwire-v1");
     assert_eq!(body["name"], "BlueShoeMart");
+    assert!(body["docs"]
+        .as_str()
+        .map(|s| s.contains("/agent/help"))
+        .unwrap_or(false));
 }
 
 #[actix_web::test]
@@ -55,6 +59,21 @@ async fn search_returns_structured_results() {
     let body: serde_json::Value = test::call_and_read_body_json(&app, req).await;
     assert!(body["results"].is_array());
     assert!(body["meta"]["latency_ms"].as_u64().is_some());
+}
+
+#[actix_web::test]
+async fn agent_help_returns_markdown() {
+    let app = test::init_service(
+        App::new()
+            .app_data(web::Data::new(AppState::default()))
+            .configure(shopwire::app::configure),
+    )
+    .await;
+    let req = test::TestRequest::get().uri("/agent/help").to_request();
+    let body = test::call_and_read_body(&app, req).await;
+    let text = String::from_utf8(body.to_vec()).expect("valid utf8");
+    assert!(text.contains("POST"));
+    assert!(text.contains("/v1/search"));
 }
 
 #[actix_web::test]

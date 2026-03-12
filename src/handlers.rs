@@ -23,7 +23,9 @@ pub async fn healthz(state: web::Data<AppState>) -> impl Responder {
     }))
 }
 
-pub async fn discovery() -> impl Responder {
+pub async fn discovery(request: HttpRequest) -> impl Responder {
+    let info = request.connection_info();
+    let docs_url = format!("{}://{}/agent/help", info.scheme(), info.host());
     let response = DiscoveryResponse {
         id: "shopwire-v1".to_string(),
         name: "BlueShoeMart".to_string(),
@@ -37,10 +39,55 @@ pub async fn discovery() -> impl Responder {
         auth: "jwt-optional".to_string(),
         rate_limit: "200/min per IP".to_string(),
         schema_url: "/v1/schema".to_string(),
-        docs: "https://docs.blueshoemart.com/agent".to_string(),
+        docs: docs_url,
     };
 
     HttpResponse::Ok().json(response)
+}
+
+pub async fn agent_help(request: HttpRequest) -> impl Responder {
+    let info = request.connection_info();
+    let base_url = format!("{}://{}", info.scheme(), info.host());
+    let body = format!(
+        r#"# ShopWire Agent Help
+
+## Endpoints
+- Discovery: `{base_url}/agent/discovery`
+- Help: `{base_url}/agent/help`
+- Schema: `{base_url}/v1/schema`
+- Search: `POST {base_url}/v1/search`
+
+## Search Request JSON
+```json
+{{
+  "query": "nike blue",
+  "filters": {{
+    "category": "shoes",
+    "brand": ["nike"],
+    "color": "blue",
+    "price": {{ "max": 100 }},
+    "stock_min": 5
+  }},
+  "sort": "discount_desc",
+  "limit": 10,
+  "page": 1
+}}
+```
+
+## Search Response Shape
+`results[]` includes:
+- `sku`, `name`, `brand`, `color`, `size`
+- `price`, `original_price`, `discount_pct`, `stock`
+- `image_url`, `redirect_url`
+
+`meta` includes:
+- `total`, `page`, `latency_ms`, `source`, `accuracy`
+"#
+    );
+
+    HttpResponse::Ok()
+        .content_type("text/markdown; charset=utf-8")
+        .body(body)
 }
 
 pub async fn schema() -> impl Responder {

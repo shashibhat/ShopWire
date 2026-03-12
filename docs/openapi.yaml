@@ -18,6 +18,12 @@ paths:
       responses:
         "200":
           description: Discovery manifest
+  /agent/help:
+    get:
+      summary: Agent usage and request examples
+      responses:
+        "200":
+          description: Agent help page in markdown
   /v1/schema:
     get:
       summary: OpenAPI schema document
