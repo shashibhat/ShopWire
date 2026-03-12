@@ -2,6 +2,64 @@
 
 Agent-first e-commerce affiliate API skeleton focused on structured responses and low-latency search.
 
+## Problem statement
+Current shopping agents depend on HTML scraping pipelines (browser automation + parsing + LLM post-processing). That creates:
+- High latency (seconds, not milliseconds)
+- Fragile integrations (DOM/layout changes break flows)
+- Large payload overhead (HTML/JS vs structured API contracts)
+- Lower answer accuracy for price/color/stock
+- Higher infra and proxy cost
+
+For affiliate commerce, this makes agent checkout discovery unreliable, expensive, and hard to scale.
+
+## Solution
+ShopWire provides an agent-native product API for structured search and inventory retrieval:
+- Stable machine-readable contracts (OpenAPI + Protobuf)
+- Fast path with Redis cache and lightweight JSON responses
+- Postgres-backed filtering/sorting for deterministic results
+- Internal ingestion endpoint for feed upserts
+- Cache invalidation on ingest for rapid freshness
+- Redirect URLs to merchant (Walmart) for final checkout
+
+The prototype is designed for Render deployment so teams can iterate quickly and validate real agent traffic.
+
+## Architecture
+```text
+[AI Agent / LLM Client]
+        |
+        | HTTP JSON
+        v
+[Render Web Service: Rust + Actix]
+        |            \
+        |             \-- GET /agent/discovery
+        |             \-- GET /v1/schema
+        |             \-- POST /v1/search
+        |             \-- POST /internal/ingest/upsert
+        |
+        +--> [Redis (Render Key Value)]
+        |       - search cache (search:v1:*)
+        |       - cache invalidation after ingest
+        |
+        +--> [Postgres (Render)]
+                - products
+                - price_history
+                - ingestion_runs
+```
+
+### Search request lifecycle
+1. Agent calls `POST /v1/search`.
+2. Service checks Redis search key.
+3. On miss, service queries Postgres with dynamic filters/sort.
+4. Response is returned and cached.
+5. Metadata includes source (`cache`, `db`, `fallback`) and latency.
+
+### Ingestion lifecycle
+1. Internal system calls `POST /internal/ingest/upsert`.
+2. Service upserts products in Postgres.
+3. Service writes `price_history` snapshots and `ingestion_runs` summary.
+4. Service invalidates `search:v1:*` keys in Redis.
+5. Next search reflects updated product state.
+
 ## Implemented in this scaffold
 - Rust `actix-web` service structure.
 - Endpoints:
